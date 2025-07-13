@@ -478,4 +478,90 @@ describe('Telegram > GenericFunctions', () => {
 			expect(secretToken).toBe('workflow123_node123');
 		});
 	});
+
+	describe('sendContact', () => {
+		let mockThis: IExecuteFunctions;
+
+		beforeEach(() => {
+			mockThis = {
+				getNodeParameter: jest.fn(),
+			} as unknown as IExecuteFunctions;
+		});
+
+		it('should add additional fields for sendContact operation', () => {
+			const body: IDataObject = {
+				chat_id: '12345',
+				phone_number: '+1234567890',
+				first_name: 'John',
+				last_name: 'Doe',
+			};
+			const index = 0;
+
+			(mockThis.getNodeParameter as jest.Mock).mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'operation':
+						return 'sendContact';
+					case 'additionalFields':
+						return {
+							disable_notification: true,
+							reply_to_message_id: 123,
+						};
+					case 'replyMarkup':
+						return 'none';
+					default:
+						return '';
+				}
+			});
+
+			addAdditionalFields.call(mockThis, body, index);
+
+			expect(body).toEqual({
+				chat_id: '12345',
+				phone_number: '+1234567890',
+				first_name: 'John',
+				last_name: 'Doe',
+				disable_notification: true,
+				reply_to_message_id: 123,
+			});
+		});
+
+		it('should add additional fields for sendContact operation with vcard', () => {
+			const body: IDataObject = {
+				chat_id: '12345',
+				phone_number: '+1234567890',
+				first_name: 'John',
+				last_name: 'Doe',
+				vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1234567890\nEND:VCARD',
+			};
+			const index = 0;
+
+			(mockThis.getNodeParameter as jest.Mock).mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'operation':
+						return 'sendContact';
+					case 'additionalFields':
+						return {
+							disable_notification: true,
+							reply_to_message_id: 123,
+						};
+					case 'replyMarkup':
+						return 'none';
+					default:
+						return '';
+				}
+			});
+
+			addAdditionalFields.call(mockThis, body, index);
+
+			expect(body).toEqual({
+				chat_id: '12345',
+				phone_number: '+1234567890',
+				first_name: 'John',
+				last_name: 'Doe',
+				vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1234567890\nEND:VCARD',
+				disable_notification: true,
+				reply_to_message_id: 123,
+			});
+		});
+	});
 });

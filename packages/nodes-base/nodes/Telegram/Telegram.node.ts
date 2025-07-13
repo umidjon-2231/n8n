@@ -254,6 +254,12 @@ export class Telegram implements INodeType {
 						action: 'Send a chat action',
 					},
 					{
+						name: 'Send Contact',
+						value: 'sendContact',
+						description: 'Send a contact',
+						action: 'Send a contact',
+					},
+					{
 						name: 'Send Document',
 						value: 'sendDocument',
 						description: 'Send a document',
@@ -334,6 +340,7 @@ export class Telegram implements INodeType {
 							'sendAnimation',
 							'sendAudio',
 							'sendChatAction',
+							'sendContact',
 							'sendDocument',
 							'sendLocation',
 							'sendMessage',
@@ -917,6 +924,64 @@ export class Telegram implements INodeType {
 			},
 
 			// ----------------------------------
+			//         message:sendContact
+			// ----------------------------------
+			{
+				displayName: 'Phone Number',
+				name: 'phone_number',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['sendContact'],
+						resource: ['message'],
+					},
+				},
+				default: '',
+				description: 'Phone number of the contact',
+			},
+			{
+				displayName: 'First Name',
+				name: 'first_name',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['sendContact'],
+						resource: ['message'],
+					},
+				},
+				default: '',
+				description: 'First name of the contact',
+			},
+			{
+				displayName: 'Last Name',
+				name: 'last_name',
+				type: 'string',
+				displayOptions: {
+					show: {
+						operation: ['sendContact'],
+						resource: ['message'],
+					},
+				},
+				default: '',
+				description: 'Last name of the contact',
+			},
+			{
+				displayName: 'VCard',
+				name: 'vcard',
+				type: 'string',
+				displayOptions: {
+					show: {
+						operation: ['sendContact'],
+						resource: ['message'],
+					},
+				},
+				default: '',
+				description: 'Additional data about the contact in the form of a vCard, 0-2048 bytes',
+			},
+
+			// ----------------------------------
 			//         message:sendDocument
 			// ----------------------------------
 			{
@@ -1155,6 +1220,7 @@ export class Telegram implements INodeType {
 							'sendAnimation',
 							'sendDocument',
 							'sendMessage',
+							'sendContact',
 							'sendPhoto',
 							'sendSticker',
 							'sendVideo',
@@ -1558,6 +1624,7 @@ export class Telegram implements INodeType {
 							'editMessageText',
 							'sendAnimation',
 							'sendAudio',
+							'sendContact',
 							'sendDocument',
 							'sendLocation',
 							'sendMessage',
@@ -1747,6 +1814,7 @@ export class Telegram implements INodeType {
 									'sendLocation',
 									'sendMediaGroup',
 									'sendMessage',
+									'sendContact',
 									'sendPhoto',
 									'sendSticker',
 									'sendVideo',
@@ -2042,6 +2110,30 @@ export class Telegram implements INodeType {
 
 						body.chat_id = this.getNodeParameter('chatId', i) as string;
 						body.action = this.getNodeParameter('action', i) as string;
+					} else if (operation === 'sendContact') {
+						// ----------------------------------
+						//         message:sendContact
+						// ----------------------------------
+
+						endpoint = 'sendContact';
+
+						body.chat_id = this.getNodeParameter('chatId', i) as string;
+						body.phone_number = this.getNodeParameter('phone_number', i) as string;
+						body.first_name = this.getNodeParameter('first_name', i) as string;
+
+						// Add optional parameters only if they have values
+						const lastName = this.getNodeParameter('last_name', i) as string;
+						if (lastName) {
+							body.last_name = lastName;
+						}
+
+						const vcard = this.getNodeParameter('vcard', i) as string;
+						if (vcard) {
+							body.vcard = vcard;
+						}
+
+						// Add additional fields and replyMarkup
+						addAdditionalFields.call(this, body, i);
 					} else if (operation === 'sendDocument') {
 						// ----------------------------------
 						//         message:sendDocument

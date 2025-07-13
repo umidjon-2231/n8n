@@ -296,6 +296,12 @@ export class Telegram implements INodeType {
 						action: 'Send a photo message',
 					},
 					{
+						name: 'Send Poll',
+						value: 'sendPoll',
+						description: 'Send a poll',
+						action: 'Send a poll',
+					},
+					{
 						name: 'Send Sticker',
 						value: 'sendSticker',
 						description: 'Send a sticker',
@@ -346,6 +352,7 @@ export class Telegram implements INodeType {
 							'sendMessage',
 							'sendMediaGroup',
 							'sendPhoto',
+							'sendPoll',
 							'sendSticker',
 							'sendVideo',
 							'unpinChatMessage',
@@ -1170,6 +1177,176 @@ export class Telegram implements INodeType {
 			},
 
 			// ----------------------------------
+			//         message:sendPoll
+			// ----------------------------------
+			{
+				displayName: 'Question',
+				name: 'question',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description: 'Poll question, 1-300 characters',
+			},
+			{
+				displayName: 'Options',
+				name: 'options',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				required: true,
+				default: {},
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description: 'Poll options, 2-12 options are allowed',
+				options: [
+					{
+						displayName: 'Option',
+						name: 'option',
+						values: [
+							{
+								displayName: 'Text',
+								name: 'text',
+								type: 'string',
+								default: '',
+								description: 'Option text, 1-100 characters',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Type',
+				name: 'type',
+				type: 'options',
+				options: [
+					{
+						name: 'Regular',
+						value: 'regular',
+					},
+					{
+						name: 'Quiz',
+						value: 'quiz',
+					},
+				],
+				default: 'regular',
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description: 'Poll type',
+			},
+			{
+				displayName: 'Anonymous',
+				name: 'is_anonymous',
+				type: 'boolean',
+				default: true,
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description: 'Whether the poll needs to be anonymous',
+			},
+			{
+				displayName: 'Allows Multiple Answers',
+				name: 'allows_multiple_answers',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+						type: ['regular'],
+					},
+				},
+				description: 'Whether the poll allows multiple answers',
+			},
+			{
+				displayName: 'Correct Option ID',
+				name: 'correct_option_id',
+				type: 'number',
+				default: 0,
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+						type: ['quiz'],
+					},
+				},
+				description: '0-based identifier of the correct answer option. Required for quiz polls.',
+			},
+			{
+				displayName: 'Explanation',
+				name: 'explanation',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+						type: ['quiz'],
+					},
+				},
+				description:
+					'Text that is shown when a user chooses an incorrect answer or taps on the lamp icon in a quiz-style poll, 0-200 characters',
+			},
+			{
+				displayName: 'Open Period',
+				name: 'open_period',
+				type: 'number',
+				default: 0,
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description:
+					'Amount of time in seconds the poll will be active after creation, 5-600. Cannot be used together with close_date.',
+			},
+			{
+				displayName: 'Close Date',
+				name: 'close_date',
+				type: 'number',
+				default: 0,
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description:
+					'Point in time (Unix timestamp) when the poll will be automatically closed. Must be at least 5 and no more than 600 seconds in the future. Cannot be used together with open_period.',
+			},
+			{
+				displayName: 'Is Closed',
+				name: 'is_closed',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						operation: ['sendPoll'],
+						resource: ['message'],
+					},
+				},
+				description: 'Whether the poll is closed',
+			},
+
+			// ----------------------------------
 			//         message:sendSticker
 			// ----------------------------------
 			{
@@ -1221,6 +1398,7 @@ export class Telegram implements INodeType {
 							'sendDocument',
 							'sendMessage',
 							'sendContact',
+							'sendPoll',
 							'sendPhoto',
 							'sendSticker',
 							'sendVideo',
@@ -1630,6 +1808,7 @@ export class Telegram implements INodeType {
 							'sendMessage',
 							'sendMediaGroup',
 							'sendPhoto',
+							'sendPoll',
 							'sendSticker',
 							'sendVideo',
 						],
@@ -2201,6 +2380,66 @@ export class Telegram implements INodeType {
 
 						body.chat_id = this.getNodeParameter('chatId', i) as string;
 						body.photo = this.getNodeParameter('file', i, '') as string;
+
+						// Add additional fields and replyMarkup
+						addAdditionalFields.call(this, body, i);
+					} else if (operation === 'sendPoll') {
+						// ----------------------------------
+						//         message:sendPoll
+						// ----------------------------------
+
+						endpoint = 'sendPoll';
+
+						body.chat_id = this.getNodeParameter('chatId', i) as string;
+						body.question = this.getNodeParameter('question', i) as string;
+
+						// Process options
+						const options = this.getNodeParameter('options', i) as IDataObject;
+						if (options && options.option) {
+							const optionArray = (options.option as IDataObject[]).map((option) => option.text);
+							body.options = JSON.stringify(optionArray);
+						}
+
+						// Add optional parameters
+						const type = this.getNodeParameter('type', i) as string;
+						if (type === 'quiz') {
+							body.type = 'quiz';
+							const correctOptionId = this.getNodeParameter('correct_option_id', i) as number;
+							body.correct_option_id = correctOptionId;
+
+							const explanation = this.getNodeParameter('explanation', i) as string;
+							if (explanation) {
+								body.explanation = explanation;
+							}
+						}
+
+						const isAnonymous = this.getNodeParameter('is_anonymous', i) as boolean;
+						body.is_anonymous = isAnonymous;
+
+						if (type === 'regular') {
+							const allowsMultipleAnswers = this.getNodeParameter(
+								'allows_multiple_answers',
+								i,
+							) as boolean;
+							if (allowsMultipleAnswers) {
+								body.allows_multiple_answers = allowsMultipleAnswers;
+							}
+						}
+
+						const openPeriod = this.getNodeParameter('open_period', i) as number;
+						if (openPeriod > 0) {
+							body.open_period = openPeriod;
+						}
+
+						const closeDate = this.getNodeParameter('close_date', i) as number;
+						if (closeDate > 0) {
+							body.close_date = closeDate;
+						}
+
+						const isClosed = this.getNodeParameter('is_closed', i) as boolean;
+						if (isClosed) {
+							body.is_closed = isClosed;
+						}
 
 						// Add additional fields and replyMarkup
 						addAdditionalFields.call(this, body, i);

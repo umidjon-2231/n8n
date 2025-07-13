@@ -564,4 +564,96 @@ describe('Telegram > GenericFunctions', () => {
 			});
 		});
 	});
+
+	describe('sendPoll', () => {
+		let mockThis: IExecuteFunctions;
+
+		beforeEach(() => {
+			mockThis = {
+				getNodeParameter: jest.fn(),
+			} as unknown as IExecuteFunctions;
+		});
+
+		it('should add additional fields for sendPoll operation', () => {
+			const body: IDataObject = {
+				chat_id: '12345',
+				question: 'What is your favorite color?',
+				options: JSON.stringify(['Red', 'Blue', 'Green']),
+				type: 'regular',
+				is_anonymous: true,
+			};
+			const index = 0;
+
+			(mockThis.getNodeParameter as jest.Mock).mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'operation':
+						return 'sendPoll';
+					case 'additionalFields':
+						return {
+							disable_notification: true,
+							reply_to_message_id: 123,
+						};
+					case 'replyMarkup':
+						return 'none';
+					default:
+						return '';
+				}
+			});
+
+			addAdditionalFields.call(mockThis, body, index);
+
+			expect(body).toEqual({
+				chat_id: '12345',
+				question: 'What is your favorite color?',
+				options: JSON.stringify(['Red', 'Blue', 'Green']),
+				type: 'regular',
+				is_anonymous: true,
+				disable_notification: true,
+				reply_to_message_id: 123,
+			});
+		});
+
+		it('should add additional fields for sendPoll quiz operation', () => {
+			const body: IDataObject = {
+				chat_id: '12345',
+				question: 'What is 2+2?',
+				options: JSON.stringify(['3', '4', '5']),
+				type: 'quiz',
+				correct_option_id: 1,
+				explanation: 'Simple math',
+				is_anonymous: true,
+			};
+			const index = 0;
+
+			(mockThis.getNodeParameter as jest.Mock).mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'operation':
+						return 'sendPoll';
+					case 'additionalFields':
+						return {
+							disable_notification: true,
+							reply_to_message_id: 123,
+						};
+					case 'replyMarkup':
+						return 'none';
+					default:
+						return '';
+				}
+			});
+
+			addAdditionalFields.call(mockThis, body, index);
+
+			expect(body).toEqual({
+				chat_id: '12345',
+				question: 'What is 2+2?',
+				options: JSON.stringify(['3', '4', '5']),
+				type: 'quiz',
+				correct_option_id: 1,
+				explanation: 'Simple math',
+				is_anonymous: true,
+				disable_notification: true,
+				reply_to_message_id: 123,
+			});
+		});
+	});
 });

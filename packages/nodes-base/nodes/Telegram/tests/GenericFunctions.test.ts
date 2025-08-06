@@ -1,11 +1,11 @@
 import {
-	NodeApiError,
 	type IDataObject,
 	type IExecuteFunctions,
 	type IHookFunctions,
 	type IHttpRequestMethods,
 	type ILoadOptionsFunctions,
 	type IWebhookFunctions,
+	NodeApiError,
 } from 'n8n-workflow';
 
 import {
@@ -13,6 +13,7 @@ import {
 	apiRequest,
 	getPropertyName,
 	getSecretToken,
+	serializeEmojiValues,
 } from '../GenericFunctions';
 
 describe('Telegram > GenericFunctions', () => {
@@ -653,6 +654,48 @@ describe('Telegram > GenericFunctions', () => {
 				is_anonymous: true,
 				disable_notification: true,
 				reply_to_message_id: 123,
+			});
+		});
+	});
+
+	describe('setMessageReaction', () => {
+		let mockThis: IExecuteFunctions;
+
+		beforeEach(() => {
+			mockThis = {
+				getNodeParameter: jest.fn(),
+			} as unknown as IExecuteFunctions;
+		});
+
+		it('should serialize reactions for setMessageReaction operation', () => {
+			const body: IDataObject = {
+				chat_id: '12345',
+				message_id: 67890,
+			};
+			const index = 0;
+
+			(mockThis.getNodeParameter as jest.Mock).mockImplementation((paramName: string) => {
+				switch (paramName) {
+					case 'operation':
+						return 'setMessageReaction';
+					case 'reaction':
+						return ['👍'];
+					default:
+						return '';
+				}
+			});
+
+			serializeEmojiValues.call(mockThis, body, index);
+
+			expect(body).toEqual({
+				chat_id: '12345',
+				message_id: 67890,
+				reaction: [
+					{
+						type: 'emoji',
+						emoji: '👍',
+					},
+				],
 			});
 		});
 	});

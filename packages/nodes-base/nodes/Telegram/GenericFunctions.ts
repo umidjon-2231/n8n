@@ -122,7 +122,7 @@ export function addAdditionalFields(
 	// Add the reply markup
 	if (operation !== 'sendMediaGroup') {
 		const replyMarkupOption = this.getNodeParameter('replyMarkup', index) as string;
-		if (replyMarkupOption === 'none') {
+		if (replyMarkupOption === 'none' || !replyMarkupOption) {
 			return;
 		}
 
@@ -333,4 +333,35 @@ export function createSendAndWaitMessageBody(context: IExecuteFunctions) {
 	};
 
 	return body;
+}
+
+export function serializeEmojiValues(this: IExecuteFunctions, body: IDataObject, index: number) {
+	try {
+		const reactionValuesJson = this.getNodeParameter('reaction', index, '') as string;
+
+		if (!reactionValuesJson) {
+			return;
+		}
+
+		const emojis = JSON.parse(reactionValuesJson) as string[];
+
+		if (!Array.isArray(emojis)) {
+			throw new NodeOperationError(
+				this.getNode(),
+				'The reaction values must be an array of emojis.',
+				{ itemIndex: index },
+			);
+		}
+
+		body.reaction = emojis.map((emoji) => ({
+			type: 'emoji',
+			emoji,
+		}));
+	} catch (e) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Failed to parse reaction values: ${e instanceof Error ? e.message : String(e)}`,
+			{ itemIndex: index },
+		);
+	}
 }

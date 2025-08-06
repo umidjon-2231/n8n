@@ -1,16 +1,16 @@
 import type {
-	IExecuteFunctions,
 	IDataObject,
+	IExecuteFunctions,
+	IHttpRequestMethods,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	IHttpRequestMethods,
 } from 'n8n-workflow';
 import {
 	BINARY_ENCODING,
-	SEND_AND_WAIT_OPERATION,
 	NodeConnectionTypes,
 	NodeOperationError,
+	SEND_AND_WAIT_OPERATION,
 } from 'n8n-workflow';
 import type { Readable } from 'stream';
 
@@ -19,6 +19,7 @@ import {
 	apiRequest,
 	createSendAndWaitMessageBody,
 	getPropertyName,
+	serializeEmojiValues,
 } from './GenericFunctions';
 import { appendAttributionOption } from '../../utils/descriptions';
 import { configureWaitTillDate } from '../../utils/sendAndWait/configureWaitTillDate.util';
@@ -314,6 +315,12 @@ export class Telegram implements INodeType {
 						action: 'Send a video',
 					},
 					{
+						name: 'Set Message Reaction',
+						value: 'setMessageReaction',
+						description: 'Set a reaction to a message',
+						action: 'Set a reaction to a message',
+					},
+					{
 						name: 'Unpin Chat Message',
 						value: 'unpinChatMessage',
 						description: 'Unpin a chat message',
@@ -355,6 +362,7 @@ export class Telegram implements INodeType {
 							'sendPoll',
 							'sendSticker',
 							'sendVideo',
+							'setMessageReaction',
 							'unpinChatMessage',
 						],
 						resource: ['chat', 'message'],
@@ -363,6 +371,129 @@ export class Telegram implements INodeType {
 				required: true,
 				description:
 					'Unique identifier for the target chat or username, To find your chat ID ask @get_id_bot',
+			},
+
+			// ----------------------------------
+			//       message:setMessageReaction
+			// ----------------------------------
+			{
+				displayName: 'Message ID',
+				name: 'messageId',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['setMessageReaction'],
+						resource: ['message'],
+					},
+				},
+				required: true,
+				description: 'Unique identifier of the message to set reaction for',
+			},
+			{
+				displayName: 'Reaction',
+				name: 'reaction',
+				type: 'multiOptions',
+				default: [],
+				displayOptions: {
+					show: {
+						operation: ['setMessageReaction'],
+						resource: ['message'],
+					},
+				},
+				options: [
+					'❤',
+					'👍',
+					'👎',
+					'🔥',
+					'🥰',
+					'👏',
+					'😁',
+					'🤔',
+					'🤯',
+					'😱',
+					'🤬',
+					'😢',
+					'🎉',
+					'🤩',
+					'🤮',
+					'💩',
+					'🙏',
+					'👌',
+					'🕊',
+					'🤡',
+					'🥱',
+					'🥴',
+					'😍',
+					'🐳',
+					'❤‍🔥',
+					'🌚',
+					'🌭',
+					'💯',
+					'🤣',
+					'⚡',
+					'🍌',
+					'🏆',
+					'💔',
+					'🤨',
+					'😐',
+					'🍓',
+					'🍾',
+					'💋',
+					'🖕',
+					'😈',
+					'😴',
+					'😭',
+					'🤓',
+					'👻',
+					'👨‍💻',
+					'👀',
+					'🎃',
+					'🙈',
+					'😇',
+					'😨',
+					'🤝',
+					'✍',
+					'🤗',
+					'🫡',
+					'🎅',
+					'🎄',
+					'☃',
+					'💅',
+					'🤪',
+					'🗿',
+					'🆒',
+					'💘',
+					'🙉',
+					'🦄',
+					'😘',
+					'💊',
+					'🙊',
+					'😎',
+					'👾',
+					'🤷‍♂',
+					'🤷',
+					'🤷‍♀',
+					'😡',
+				].map((emoji) => ({
+					name: emoji,
+					value: emoji,
+				})),
+				description:
+					"The reaction to set on the message. Currently, as non-premium users, bots can set up to one reaction per message. A custom emoji reaction can be used if it is either already present on the message or explicitly allowed by chat administrators. Paid reactions can't be used by bots.",
+			},
+			{
+				displayName: 'Is Big',
+				name: 'isBig',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						operation: ['setMessageReaction'],
+						resource: ['message'],
+					},
+				},
+				description: 'Whether to set reaction with a big animation',
 			},
 
 			// ----------------------------------
@@ -2467,6 +2598,18 @@ export class Telegram implements INodeType {
 
 						// Add additional fields and replyMarkup
 						addAdditionalFields.call(this, body, i);
+					} else if (operation === 'setMessageReaction') {
+						// ----------------------------------
+						//         message:setMessageReaction
+						// --------------------------------
+
+						endpoint = 'setMessageReaction';
+
+						body.chat_id = this.getNodeParameter('chatId', i) as string;
+						body.message_id = this.getNodeParameter('messageId', i) as string;
+						body.is_big = this.getNodeParameter('isBig', i, false) as boolean;
+
+						serializeEmojiValues.call(this, body, i);
 					}
 				} else {
 					throw new NodeOperationError(this.getNode(), `The resource "${resource}" is not known!`, {
